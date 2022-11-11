@@ -2,28 +2,38 @@ const sqlite3 = require("sqlite3").verbose();
 const express = require("express");
 const moment = require("moment");
 const bodyParser = require("body-parser");
-// const morgan = require("morgan");
-// const fs = require("fs");
-// const path = require("path");
+
 const http = require("http");
 const hostname = "localhost";
 const port = process.env.PORT || 8080;
-// const { v4: uuidv4 } = require("uuid");
 const app = express();
 const server = http.createServer(app);
+
 app.use(bodyParser.json());
 
 // MAKING DB FILE
 const db = new sqlite3.Database("./database/users.db");
 
 // CATEGORYS USER MUST CHOSE FROM
-const categorys = {
-  categoryOne: "Beverages",
-  categoryTwo: "Bakery",
-  categoryTree: "Dairy",
-  categoryFour: "Meat",
-  categoryFive: "Veggies",
-};
+// const categorys = {
+//   categoryOne: "Beverages",
+//   categoryTwo: "Bakery",
+//   categoryTree: "Dairy",
+//   categoryFour: "Meat",
+//   categoryFive: "Veggies",
+// };
+
+const categorys = [
+  "beverage",
+  "bakery",
+  "dairy",
+  "meat",
+  "veggies",
+  "fruit",
+  "cleaners",
+  "sweets",
+  "other",
+];
 
 app.get("/", (req, res) => {
   res.send(categorys);
@@ -33,25 +43,32 @@ let items = [];
 
 app.post("/item", (req, res) => {
   const item = req.body;
-  console.log(item);
-  items.push(item);
+
+  let category = req.body.category;
+
+  if (categorys.includes(category.toLowerCase()) || category === "") {
+    items.push(item);
+    res.send(`Item whith name ${item.name} added to the items array`);
+  } else {
+    res.send(`You must chose a category from list or leave it blank`);
+    return;
+  }
   console.log(items);
-  res.send(`Item whith name ${item.name} added to the items array`);
 });
 
 app.get("/items", (req, res) => {
   res.send(items);
 });
 
-// db.run(
-//   "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, category TEXT, price INTEGER, cardnumber INTEGER, store TEXT, location TEXT, date TEXT  )"
-// );
+db.run(
+  "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, category TEXT, price INTEGER, cardnumber INTEGER, store TEXT, location TEXT, date TEXT  )"
+);
 
 app.post("/card", (req, res) => {
   const card = req.body.cardnumber;
   const store = req.body.store;
   const location = req.body.location;
-  let date = moment().format("DD.MM.YY");
+  let date = moment().format("DD.MM.YYYY");
 
   items.forEach((item) => {
     item.cardnumber = card;
@@ -150,21 +167,56 @@ app.get("/day/:date", (req, res) => {
 
 app.get("/month/:month_number/:year_number", (req, res) => {
   let data = [];
+  let month = req.params.month_number;
+  let year = req.params.year_number;
+
   db.serialize(() => {
     db.each(
-      "SELECT * FROM users WHERE date = ?;",
-      [req.params.mont.month_number.year_number],
+      `SELECT * FROM users WHERE date LIKE '%${month}.${year}';`,
+
       (err, row) => {
         if (err) {
-          res.send("Error occur while updating");
+          res.send("Error occur");
           return console.error(err.message);
         }
+
         data.push(row);
+        console.log("Data", data);
       },
       () => {
         res.send(data);
       }
     );
+  });
+});
+
+// DELETE DATA FROM A CARDNUMBER
+app.delete("/card/:card_number", (req, res) => {
+  db.serialize(() => {
+    db.run(
+      "DELETE FROM users WHERE cardnumber = ?",
+      req.params.card_number,
+
+      (err) => {
+        if (err) {
+          res.send("Error occur");
+          return console.error(err.message);
+        }
+        res.send("Data deleted");
+        console.log("Data deleted");
+      }
+    );
+  });
+});
+
+app.get("/close", (req, res) => {
+  db.close((err) => {
+    if (err) {
+      res.send("There is some error in closing the database");
+      return console.error(err.message);
+    }
+    console.log("Closing the database connection.");
+    res.send("Database connection successfully closed");
   });
 });
 
