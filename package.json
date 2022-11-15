@@ -1,13 +1,14 @@
 {
   "name": "arbeidskravet",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "sqlite3 api",
+  "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "dev": "nodemon",
+    "start": "node app.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Renate Hem",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.1",

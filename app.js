@@ -1,3 +1,9 @@
+/*
+ * Copyright Renate Hem
+ *
+ * This is the main entrypoint of my application
+ */
+
 const sqlite3 = require("sqlite3").verbose();
 const express = require("express");
 const moment = require("moment");
@@ -10,19 +16,12 @@ const app = express();
 const server = http.createServer(app);
 
 app.use(bodyParser.json());
+app.use(express.json()); //THIS IS TO ACCEPT JSON FORMAT
 
 // MAKING DB FILE
 const db = new sqlite3.Database("./database/users.db");
 
-// CATEGORYS USER MUST CHOSE FROM
-// const categorys = {
-//   categoryOne: "Beverages",
-//   categoryTwo: "Bakery",
-//   categoryTree: "Dairy",
-//   categoryFour: "Meat",
-//   categoryFive: "Veggies",
-// };
-
+// CATEGORYS ARRAY USER MUST CHOSE FROM
 const categorys = [
   "beverage",
   "bakery",
@@ -56,6 +55,7 @@ app.post("/item", (req, res) => {
   console.log(items);
 });
 
+// GET ITEMS FROM ITEMS(array)
 app.get("/items", (req, res) => {
   res.send(items);
 });
@@ -68,7 +68,8 @@ app.post("/card", (req, res) => {
   const card = req.body.cardnumber;
   const store = req.body.store;
   const location = req.body.location;
-  let date = moment().format("DD.MM.YYYY");
+
+  let date = moment().format("DD.MM.YY");
 
   items.forEach((item) => {
     item.cardnumber = card;
@@ -82,17 +83,17 @@ app.post("/card", (req, res) => {
     item.location = location;
   });
 
-  console.log("Items", items);
-  res.send(`Card with cardnumber ${card} added`);
+  console.log(
+    "Items added to database with card/store/location information",
+    items
+  );
+  res.send(items);
 
   items.map((item) => {
     let name = item.name;
     let category = item.category;
     let price = item.price;
     let cardnumber = item.cardnumber;
-    // let location = item.location;
-    // let store = item.store;
-    // let date = item.newDate;
 
     db.serialize(() => {
       db.each(
@@ -105,15 +106,16 @@ app.post("/card", (req, res) => {
           "',  '" +
           cardnumber +
           "', '" +
-          location +
-          "', '" +
           store +
+          "', '" +
+          location +
           "', '" +
           date +
           "');"
       ),
         (err) => {
           if (err) {
+            res.send("Error occur while adding to database");
             return console.log(err.message);
           }
           console.log("New user has been added");
@@ -124,15 +126,60 @@ app.post("/card", (req, res) => {
   });
 });
 
+// GET DATA (item-name only) BY CARD NUMBER - 4 DIGITS
 app.get("/card/:card_number", (req, res) => {
   let data = [];
+
   db.serialize(() => {
     db.each(
-      "SELECT * FROM users WHERE cardnumber = ?;",
+      "SELECT name FROM users WHERE cardnumber = ?;",
       [req.params.card_number],
       (err, row) => {
         if (err) {
-          res.send("Error occur while updating");
+          res.send("Error occur while displaying card details");
+          return console.error(err.message);
+        }
+        data.push(row);
+      },
+      () => {
+        res.send(data);
+      }
+    );
+  });
+});
+
+app.get("/store/:store_name", (req, res) => {
+  let data = [];
+
+  db.serialize(() => {
+    db.each(
+      "SELECT * FROM users WHERE store = ?;",
+      [req.params.store_name],
+      (err, row) => {
+        if (err) {
+          res.send("Error occur while displaying store details");
+          return console.error(err.message);
+        }
+        data.push(row);
+      },
+      () => {
+        res.send(data);
+      }
+    );
+  });
+});
+
+// GET DATA FROM A LOCATION
+app.get("/location/:location_name", (req, res) => {
+  let data = [];
+
+  db.serialize(() => {
+    db.each(
+      "SELECT * FROM users WHERE location = ?;",
+      [req.params.location_name],
+      (err, row) => {
+        if (err) {
+          res.send("Error occur while displaying store details");
           return console.error(err.message);
         }
         data.push(row);
@@ -147,6 +194,7 @@ app.get("/card/:card_number", (req, res) => {
 // GET DATA BY DATE DD.MM.YY
 app.get("/day/:date", (req, res) => {
   let data = [];
+
   db.serialize(() => {
     db.each(
       "SELECT * FROM users WHERE date = ?;",
@@ -165,6 +213,7 @@ app.get("/day/:date", (req, res) => {
   });
 });
 
+// GET DATA BY MONTH AND YEAR
 app.get("/month/:month_number/:year_number", (req, res) => {
   let data = [];
   let month = req.params.month_number;
@@ -199,16 +248,18 @@ app.delete("/card/:card_number", (req, res) => {
 
       (err) => {
         if (err) {
-          res.send("Error occur");
+          res.sendStatus(404);
           return console.error(err.message);
         }
-        res.send("Data deleted");
+        res.sendStatus(204);
+
         console.log("Data deleted");
       }
     );
   });
 });
 
+// CLOSE DATABASE
 app.get("/close", (req, res) => {
   db.close((err) => {
     if (err) {
@@ -219,6 +270,19 @@ app.get("/close", (req, res) => {
     res.send("Database connection successfully closed");
   });
 });
+
+// // DELETE DATABASE
+// app.delete("/delete_database", (req, res) => {
+//   db.run((err) => {
+//     if (err) {
+//       res.send("There is some error in deleting the database");
+//       return console.error(err.message);
+//     }
+//     `DROP TABLE users`;
+//     console.log("Database deleted.");
+//     res.send("Database is successfully deleted");
+//   });
+// });
 
 server.listen(port, hostname, () => {
   console.log(`server is running at http://${hostname}:${port}`);
