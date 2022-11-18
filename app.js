@@ -36,7 +36,10 @@ app.get("/", (req, res) => {
 });
 
 /*
- * POST ITEMS IN THE ITEMS ARRAY, IT RETURNS A CHECK IF YOU HAVE ADDED ITEMS WITH THE RIGHT CATEGORY. IF YOU DONT CHOOSE RIGHT CATEGORY, ITEMS WILL NOT BE PUSHED INTO ITEMS ARRAY.
+ * Post items in the items array
+ * Prints Items added or You must choose a category
+ * @param
+ * @returns If data dont exists, It returns 404
  */
 let items = [];
 
@@ -66,7 +69,12 @@ db.run(
   "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, category TEXT, price INTEGER NOT NULL, cardnumber INTEGER NOT NULL, store TEXT NOT NULL, location TEXT NOT NULL, date TEXT NOT NULL  )"
 );
 
-// * THIS ENDPIONT IS ADDING MORE INFORMATION ON THE ITEMS: CARDNUMBER, STORE AND LOCATION. IM ADDING IT TO THE ARRAY BEFORE IT'S PUSHED INTO THE DATABASE. IF ITEMS ARRAY IS EMPTY IT WILL RETURN A MESSAGE THAT IT IS AND IT WILL NOT BE PUSHED, OTHERWISE IT WILL RETURN A MESSAGE THAT ITEMS IS PAID FOR. (201)
+/*
+ * Posts to database
+ * Prints Items paid or You must add items
+ * @param req, res, item
+ * @returns 201 or 404
+ */
 app.post("/card", (req, res) => {
   const card = req.body.cardnumber;
   const store = req.body.store;
@@ -122,7 +130,10 @@ app.post("/card", (req, res) => {
 });
 
 /*
- * -GET DATA FROM TABLE BY CARD NUMBER - 4 DIGITS - RETURNING (name, store, location, cardnumber) DATA FROM A CARDNUMBER, OR A MESSAGE SAYING CARDNUMBER DON'T EXIST.
+ * Get items connected to a cardnumber
+ * Prints  array of Items or cardnumber dont exists
+ * @param err, row, req, res
+ * @returns If data dont exists, It returns 404
  */
 app.get("/card/:card_number", (req, res) => {
   let data = [];
@@ -158,7 +169,10 @@ app.get("/card/:card_number", (req, res) => {
 });
 
 /*
- * GET DATA BY STORE NAME, RETURNS AN ARRAY OFF DATA REGISTRED TO THAT STORE. I USED MAP TO COMPARE THE VALUES IN STOREDATA AND STORENAME AND TO CHECK IF STORENAME EXITS, FOR WRITING THE IF STATMENT.
+ * Get items connected to a store name
+ * Prints array of Items or store dont exists
+ * @param err, row, store, reg, res
+ * @returns If data dont exists, It returns 404
  */
 app.get("/store/:store_name", (req, res) => {
   let data = [];
@@ -192,7 +206,12 @@ app.get("/store/:store_name", (req, res) => {
   });
 });
 
-// * GET DATA FROM A LOCATION RETURNING AN ARRAY OF ITEMS BOUGHT ON THAT LOCATION
+/*
+ * Get items connected to a location
+ * Prints array of Items or location dont exists
+ * @param err, row, location, reg, res
+ * @returns If data dont exists, It returns 404
+ */
 app.get("/location/:location_name", (req, res) => {
   let data = [];
 
@@ -226,7 +245,10 @@ app.get("/location/:location_name", (req, res) => {
 });
 
 /*
- * GET DATA BY DATE DD.MM.YY - RETURNING ALL ITEMS BOUGHT ON THAT DAY - RETURNING AN MESSAGE IF DATE DONT'T EXIST
+ * Get items connected to a date DD.MM.YY
+ * Prints array of Items or date dont exists
+ * @param err, row, date, reg, res
+ * @returns If data dont exists, It returns 404
  */
 app.get("/day/:date", (req, res) => {
   let data = [];
@@ -259,7 +281,12 @@ app.get("/day/:date", (req, res) => {
   });
 });
 
-// * GET DATA BY MONTH AND YEAR - RETURNING ALL DATA BOUGTH IN ONE MONTH AND YEAR. CHECK IF DATE EXISTS - RETURNS A MESSAGE IF DATE NOT FOUND
+/*
+ * Get items connected to a date MM.YY
+ * Prints array of Items or date dont exists
+ * @param err, row, date, reg, res
+ * @returns If data dont exists, It returns 404
+ */
 app.get("/month/:month_number/:year_number", (req, res) => {
   let data = [];
   let month = req.params.month_number;
@@ -282,7 +309,7 @@ app.get("/month/:month_number/:year_number", (req, res) => {
         });
 
         if (monthYearData.includes(month + "." + year)) {
-          res.send(data);
+          return res.send(data);
         }
         return res
           .status(404)
@@ -292,7 +319,13 @@ app.get("/month/:month_number/:year_number", (req, res) => {
   });
 });
 
-// * DELETE DATA FROM A CARDNUMBER - RETURNING "DATA DELETED" OR 400 IF IT IS A BAD REQ.
+/*
+ * Deleting items connected to a cardnumber
+ * Prints data deleted
+ * @param err, reg, res
+ * @returns If data dont exists, It returns 404
+ */
+
 app.delete("/card/:card_number", (req, res) => {
   db.serialize(() => {
     db.run(
